@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<htm lang="">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="Time_Manipulation.js"></script>
+    <script>
+      var user = localStorage.getItem("newUser");
+      if(user != null) {
+        var dateTime = new Date();
+          
+        var currentTime = {
+          hours: dateTime.getHours(),
+          minutes: dateTime.getMinutes(),
+          seconds: dateTime.getSeconds(),
+          date: dateTime.getDate(),
+          month: dateTime.getMonth(),
+          year: dateTime.getFullYear()
+        };
+
+        accessLocalStorage("users", function(userList) {
+          userList[user].active = true;
+          userList[user].logInCount++;
+
+          // Assigning the Current Time to Time Keeping array of the user.
+          userList[user].logInTimeList.push({});
+          Object.assign(userList[user].logInTimeList[userList[user].logInTimeList.length - 1], currentTime);
+
+          localStorage.removeItem("newUser");
+
+          if(userList[user].admin == true) {
+            localStorage.setItem("adminAllow", JSON.stringify([true, user]));
+            window.location.href = "admin.html";
+          }
+
+          return userList;
+        });
+      }
+      else {
+        window.location.href = "./index.html";
+      }
+
+      window.addEventListener("load", function() {
+
+        assignDataTo("userName", user);
+        assignDataTo("logInTime", currentTime.hours + ":" + currentTime.minutes + ":" + currentTime.seconds);
+
+        var endTime = timeAddSubtract(currentTime, 0, 5, 0);
+        assignDataTo("logOutTime", endTime.hours + ":" + endTime.minutes + ":" + endTime.seconds);
+
+        var timeLeft = {
+          hours: 0,
+          minutes: 5,
+          seconds: 0
+        };
+
+        localStorage.setItem((user + "Time"), JSON.stringify(timeKeeper));
+
+        var timeKeeper = setInterval(reduceASecond, 1000);
+
+        function reduceASecond() {
+          timeLeft = timeAddSubtract(timeLeft, 0, 0, -1);
+          assignDataTo("timer", timeLeft.minutes + ":" + timeLeft.seconds);
+
+          localStorage.setItem((user + "Time"), JSON.stringify(timeLeft));
+
+          if((timeLeft.hours == 0) && (timeLeft.minutes == 0) && (timeLeft.seconds == 0)) {
+            clearInterval(timeKeeper);
+            terminateLogIn();
+          }
+        }
+
+        document.getElementById("logOut").addEventListener("click", function() {
+          terminateLogIn();
+        });
+      });
+
+      window.addEventListener("unload", function() {
+        if(localStorage.getItem("adminAllow") == null) {
+          terminateLogIn();
+        }
+      });
+
+      window.addEventListener("beforeunload", function(e) {
+        e.preventDefault();
+        e.returnValue = "";
+      });
+
+      function terminateLogIn() {
+        accessLocalStorage("users", function(userList) {
+          userList[user].active = false;
+          return userList;
+        });
+        
+        accessLocalStorage("activeList", function(activeUsers) {
+          delete activeUsers[user];
+          return activeUsers;
+        });
+        
+        localStorage.removeItem(user + "Time");
+
+        window.location.href = "./index.html";
+      }
+
+      function assignDataTo(elementId = "", data = "") {
+        document.getElementById(elementId).innerHTML = data;
+      }
+
+      function accessLocalStorage(itemName = "", callBack) {
+        var itemValue = JSON.parse(localStorage.getItem(itemName));
+        var itemValue = callBack(itemValue);
+        localStorage.setItem(itemName, JSON.stringify(itemValue));
+      }
+    </script>
+  </head>
+  <body>
+    <h1> Welcome <span id="userName">User Name</span></h1>
+    <p>
+      <span> Log In Time : </span>
+      <span id="logInTime"></span>
+    </p>
+    <p>
+      <span> Session End Time : </span>
+      <span id="logOutTime"></span>
+    </p>
+    <p>
+      <span> Time Left :</span>
+      <span id="timer"> Calculating... </span>
+    </p>
+    <button id="logOut"> Log Out </button>
+  </body>
+</htm>

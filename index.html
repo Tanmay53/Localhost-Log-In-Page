@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=0" />
+    <script>
+      /*
+        Use the following code in the console for initializing the admin account.
+
+        var users = { "adminName": {"pwd": "password", "active": false, "logInCount": 0, "logInTimeList": [], "admin": true}};
+
+        localStorage.setItem("users", JSON.stringify(users));
+      */
+
+      window.addEventListener("load", function() {
+        document.getElementById("logIn").addEventListener("click", function() {
+          printMessage("");
+
+          if(checkValidity()) {
+            var userName = document.getElementById("name").value;
+            var password = document.getElementById("password").value;
+            var userData = JSON.parse(localStorage.getItem("users"));
+            var names = ((userData == null) ? [] : Object.keys(userData));
+
+            if(names.includes(userName) && (userData[userName].pwd == password)) {
+              if(userData[userName].active === false) {
+                clearInputsById(["name", "password"]);
+                printMessage("You have Successfuly Logged In.");
+                localStorage.setItem("newUser", userName);
+
+                /*var activeUsers = JSON.parse(localStorage.getItem("activeList"));
+                var dateTime = new Date();
+
+                if(activeUsers == null) {
+                  activeUsers = {};
+                }
+
+                activeUsers[userName] = {IN_Time: {
+                  hours: dateTime.getHours(),
+                  minutes: dateTime.getMinutes(),
+                  seconds: dateTime.getSeconds()
+                }};
+
+                localStorage.setItem("activeList", JSON.stringify(activeUsers));*/
+
+                accessLocalStorage("activeList", function(activeUsers) {
+                  var dateTime = new Date();
+
+                  if(activeUsers == null) {
+                    activeUsers = {};
+                  }
+
+                  activeUsers[userName] = {IN_Time: {
+                    hours: dateTime.getHours(),
+                    minutes: dateTime.getMinutes(),
+                    seconds: dateTime.getSeconds()
+                  }};
+
+                  return activeUsers;
+                });
+
+                window.location.href = "./dash.html";
+              }
+              else {
+                printMessage("You have already Logged In.", true);
+              }
+            }
+            else {
+              printMessage("The Username or Password is Incorrect.", true);
+            }
+          }
+        });
+
+        document.getElementById("signUp").addEventListener("click", function() {
+          printMessage("");
+
+          if(checkValidity()) {
+            var userName = document.getElementById("name").value;
+            var password = document.getElementById("password").value;
+
+            accessLocalStorage("users", function(userData) {
+              if(userData == undefined) {
+                userData = {};
+              }
+
+              if(userData[userName] == undefined) {
+                userData[userName] = {};
+                userData[userName].pwd = password;
+                userData[userName].active = false;
+                userData[userName].logInCount = 0;
+                userData[userName].logInTimeList = [];
+
+                clearInputsById(["name", "password"]);
+                printMessage("You New LogIn Id has been created.");
+              }
+              else {
+                printMessage("The User Name is not Valid.", true);
+              }
+
+              return userData;
+            });
+          }
+        });
+      });
+
+      function checkValidity() {
+        var inputIds = ["name", "password"];
+
+        for(var index = 0; index < inputIds.length; index++) {
+          var element = document.getElementById(inputIds[index]);
+          var min = parseInt(element.minLength);
+          var max = parseInt(element.maxLength);
+          var value = element.value;
+
+          if((value.length < min) || (value.length > max)) {
+            printMessage("The " + inputIds[index] + " field should be " + min + "-" + max + " characters long.", true);
+            return false;
+          }
+        }
+
+        return true;
+      }
+
+      function printMessage(message = String, error = false) {
+        var messageBox = document.getElementById("errorMessage");
+
+        messageBox.innerHTML = message;
+
+        if(error) {
+          messageBox.style.color = "red";
+        }
+        else {
+          messageBox.style.color = "green";
+        }
+      }
+
+      function clearInputsById(elementIds = []) {
+        for(var index = 0; index < elementIds.length; index++) {
+          document.getElementById(elementIds[index]).value = "";
+        }
+      }
+
+      function accessLocalStorage(itemName = "", callBack) {
+        var itemValue = JSON.parse(localStorage.getItem(itemName));
+        var itemValue = callBack(itemValue);
+        localStorage.setItem(itemName, JSON.stringify(itemValue));
+      }
+    </script>
+  </head>
+  <body>
+    <div id="loginForm">
+      <h2> Enter the Details </h2>
+      <label for="name"> User Name : </label>
+      <input type="text" id="name" maxlength="20" minlength="1" required />
+      <br />
+      <label for="password"> Password : </label>
+      <input type="password" id="password" maxlength="20" minlength="8" required />
+      <br />
+      <input type="submit" id="logIn" value=" Log In " />
+      <input type="submit" id="signUp" value=" Sign Up " />
+      <p id="errorMessage"></p>
+    </div>
+  </body>
+</html>

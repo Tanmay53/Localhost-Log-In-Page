@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      var adminPass = JSON.parse(localStorage.getItem("adminAllow"));
+
+      if(adminPass[0] === true) {
+        localStorage.removeItem("adminAllow");
+
+        var userList = JSON.parse(localStorage.getItem("users"));
+
+        window.addEventListener("load", function() {
+          assignPageContents();
+
+          document.getElementById("logOut").addEventListener("click", terminateLogIn);
+
+          document.getElementById("refresher").addEventListener("click", function() {
+            userList = JSON.parse(localStorage.getItem("users"));
+
+            var table = document.getElementById("userTable").querySelector("tbody");
+            var rowCount = table.children.length;
+
+            for(var rowIndex = 1; rowIndex < rowCount; rowIndex++) {
+              table.removeChild(table.children[1]);
+            }
+
+            assignPageContents(); 
+          });
+        });
+
+        function assignPageContents() {
+          assignDataTo("adminName", adminPass[1]);
+
+          var table =  document.getElementById("userTable").querySelector("tbody");
+
+          for(key in userList) {
+            var row = pushElementTo(table, "tr", "");
+
+            pushElementTo(row, "td", key);
+            pushElementTo(row, "td", userList[key].logInCount);
+            pushElementTo(row, "td", ((userList[key].active) ? "Logged In" : "Logged Out"));
+            var buttonCell = pushElementTo(row, "td", "");
+
+            var iButton = pushElementTo(buttonCell, "button", "Know More");
+            iButton.classList.add("infoButton");
+          }
+
+          var infoButtons = document.getElementsByClassName("infoButton");
+          
+          for(var index = 0; index < infoButtons.length; index++) {
+            infoButtons[index].addEventListener("click", function() {
+              var userName = this.parentElement.parentElement.querySelector("td").innerText;
+
+              assignDataTo("name", userName);
+              assignDataTo("status", ((userList[userName].active) ? "Logged In" : "Logged Out"));
+
+              var timeList = userList[userName].logInTimeList;
+
+              var timeBox = document.getElementById("timeData");
+
+              timeBox.removeChild(timeBox.querySelector("#timeList"));
+
+              var list = pushElementTo(timeBox, "ol", "", {"id": "timeList"});
+
+              timeList.forEach(function(timeObject) {
+                pushElementTo(list, "li", (timeObject.date + "/" + timeObject.month + "/" + timeObject.year + " " + timeObject.hours + ":" + timeObject.minutes + ":" + timeObject.seconds));
+              });
+
+              document.getElementById("infoBox").style.display = "block";
+              window.location = "#infoBox";
+            });
+          }
+        }
+
+        window.addEventListener("unload", function() {
+            terminateLogIn();
+        });
+
+        window.addEventListener("beforeunload", function(e) {
+          e.preventDefault();
+          e.returnValue = "";
+        });
+
+        function terminateLogIn() {
+          accessLocalStorage("users", function(userList) {
+            userList[adminPass[1]].active = false;
+            return userList;
+          });
+          
+          accessLocalStorage("activeList", function(activeUsers) {
+            delete activeUsers[adminPass[1]];
+            return activeUsers;
+          });
+          
+          localStorage.removeItem(adminPass[1] + "Time");
+
+          window.location.href = "./index.html";
+        }
+      }
+      else {
+        window.location.href = "./index.html";
+      }
+
+      function pushElementTo(parent, tagName = "", data = "", attributes = {}) {
+        var newElement = document.createElement(tagName);
+
+        newElement.innerHTML = data;
+
+        for(var key in attributes) {
+            newElement[key] = attributes[key];
+        }
+
+        parent.appendChild(newElement);
+
+        return newElement;
+      }
+
+      function assignDataTo(elementId = "", data = "") {
+        document.getElementById(elementId).innerHTML = data;
+      }
+
+      function accessLocalStorage(itemName = "", callBack) {
+        var itemValue = JSON.parse(localStorage.getItem(itemName));
+        var itemValue = callBack(itemValue);
+        localStorage.setItem(itemName, JSON.stringify(itemValue));
+      }
+    </script>
+  </head>
+  <body>
+    <h1> Welcome <span id="adminName"></span></h1>
+
+    <button id="logOut"> Log Out </button>
+    <br />
+    
+    <div id="infoBox" style="display: none;">
+      <div> User Name : <span id="name"></span></div>
+      <br />
+      <div> Status : <span id="status"></span></div>
+      <br />
+      <div id="timeData">
+        Log In Sessions<br />
+        <ol id="timeList"></ol>
+      </div>
+    </div>
+    
+    <table id="userTable">
+      <thead>User Data</thead>
+      <tbody>
+        <tr>
+          <th>User</th>
+          <th>Log In Count</th>
+          <th>Status</th>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <br />
+    <button id="refresher"> Refresh List </button>
+  </body>
+</html>
